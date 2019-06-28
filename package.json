@@ -4,7 +4,7 @@
   "description": "",
   "main": "bot.js",
   "scripts": {
-    "start": "TZ='Europe/Paris' npx nodemon bot.js",
+    "start": "TZ='Europe/Paris' npx nodemon bot.js --ignore 'data/'",
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "npx eslint src bot.js",
     "lintfix": "npx eslint src bot.js --fix",
