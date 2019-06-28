@@ -38,6 +38,24 @@ const fetchAuthor = async authorId => bot.users.get(authorId);
 const fetchScheduleChannel = async scheduleChannelId =>
   bot.channels.get(scheduleChannelId);
 
+const getScheduledMessageById = async ({ id, authorId = false } = {}) => {
+  try {
+    const query = {
+      active: true,
+      scheduledDate: { $gt: Date.now() },
+      _id: id
+    };
+    if (authorId) {
+      query.authorId = { $eq: authorId };
+    }
+    const scheduledMessage = await ScheduleMessageSchema.findOne(query);
+    return scheduledMessage;
+  } catch (err) {
+    logger.error('Error while trying to fetch scheduled messages %j', err);
+    throw new Error(`Scheduled message not found (id: ${id})`);
+  }
+};
+
 const getScheduledMessages = async (authorId = false) => {
   try {
     const query = {
@@ -112,6 +130,55 @@ bot.on('message', async message => {
   const command = _.toLower(args.shift().substr(prefixLength));
 
   if (!_.includes(['schedule'], command)) {
+    return;
+  }
+
+  if (0 < _.size(args)) {
+    if ('list' === _.first(args)) {
+      const listAllCondition =
+        'all' === _.nth(args, 1) && message.author.id === config.ownerId
+          ? null
+          : message.author.id;
+      const scheduledMessages = await getScheduledMessages(listAllCondition);
+      const smList = _(scheduledMessages)
+        .map(
+          sm =>
+            `Id: ${sm.id}\nChannel: ${sm.scheduleChannel.name} (${sm.scheduleGuild.name})\nMessage: ${sm.message}\nDate: ${sm.scheduledDate}`
+        )
+        .join('\n');
+      message.channel.send(`${smList || 'No scheduled messages.'}`, {
+        split: true
+      });
+    } else if ('delete' === _.first(args)) {
+      const deletedId = _.nth(args, 1);
+      if (!deletedId) {
+        message.channel.send(
+          `Missing argument: id of message schedule to delete.\nUsage: ${config.prefix}${command} delete [scheduleId]`
+        );
+        return;
+      }
+      try {
+        const scheduleMessage = await getScheduledMessageById({
+          id: deletedId
+        });
+        const scheduleJob = _.get(schedule.scheduledJobs, deletedId);
+        if (scheduleJob) {
+          scheduleJob.cancel();
+        }
+        scheduleMessage.active = false;
+        await scheduleMessage.save();
+        message.channel.send(`Scheduled message (id: ${deletedId}) deleted.`);
+      } catch (err) {
+        logger.error('Error deleting schedule message %s:  %j', deletedId, err);
+        message.channel.send(
+          `Error deleting schedule message (id: ${deletedId}), message not found.`
+        );
+      }
+    } else if ('help' === _.first(args)) {
+      message.channel.send(
+        `\`!schedule\`: Message scheduling\n\`!schedule list\`: List all scheduled messages\n\`!schedule delete [scheduleId]\`: Delete a scheduled message (with the id returned with \`!schedule list\``
+      );
+    }
     return;
   }
 
