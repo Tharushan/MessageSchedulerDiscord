@@ -85,20 +85,20 @@ bot.login(config.discord.token);
 bot.on('ready', async () => {
   logger.info('Starting scheduler bot...');
   const scheduledMessages = await getScheduledMessages(); // (because we're changing db items)
-  /* eslint-disable no-param-reassign */ await Promise.map(
-    scheduledMessages,
-    scheduledMessage => {
-      schedule.scheduleJob(
-        scheduledMessage.id,
-        scheduledMessage.scheduledDate,
-        async () => {
-          scheduledMessage.scheduleChannel.send(scheduledMessage.message);
-          scheduledMessage.scheduledMessageObject.active = false;
-          await scheduledMessage.scheduledMessageObject.save();
-        }
-      );
-    }
-  );
+  /* eslint-disable no-param-reassign */
+
+  await Promise.map(scheduledMessages, scheduledMessage => {
+    schedule.scheduleJob(
+      scheduledMessage.id,
+      scheduledMessage.scheduledDate,
+      async () => {
+        scheduledMessage.scheduleChannel.send(scheduledMessage.message);
+        scheduledMessage.scheduledMessageObject.active = false;
+        await scheduledMessage.scheduledMessageObject.save();
+      }
+    );
+  });
+
   /* eslint-enable no-param-reassign */
 });
 
