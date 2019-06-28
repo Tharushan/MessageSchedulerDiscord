@@ -4,6 +4,7 @@ const _ = require('lodash');
 const schedule = require('node-schedule');
 const moment = require('moment');
 const chrono = require('chrono-node');
+const Promise = require('bluebird');
 
 const logger = require('./src/utils/Logger');
 const Database = require('./src/providers/Database'); // eslint-disable-line
@@ -32,10 +33,73 @@ const getResponseMessage = async message => {
   return responseMessage;
 };
 
+const fetchAuthor = async authorId => bot.users.get(authorId);
+
+const fetchScheduleChannel = async scheduleChannelId =>
+  bot.channels.get(scheduleChannelId);
+
+const getScheduledMessages = async (authorId = false) => {
+  try {
+    const query = {
+      active: true,
+      scheduledDate: { $gt: Date.now() }
+    };
+    if (authorId) {
+      query.authorId = { $eq: authorId };
+    }
+    const scheduledMessages = await ScheduleMessageSchema.find(query);
+    const sm = await Promise.map(scheduledMessages, async scheduledMessage => {
+      try {
+        const author = await fetchAuthor(scheduledMessage.authorId);
+        const scheduleChannel = await fetchScheduleChannel(
+          scheduledMessage.scheduleChannelId
+        );
+        return {
+          id: scheduledMessage._id.toString(),
+          author,
+          scheduleChannel,
+          scheduleGuild: scheduleChannel.guild || undefined,
+          message: scheduledMessage.message,
+          scheduledDate: moment(scheduledMessage.scheduledDate).format(
+            'YYYY-MM-DD HH:mm'
+          ),
+          createdDate: moment(scheduledMessage.createdDate).format(
+            'YYYY-MM-DD HH:mm'
+          ),
+          scheduledMessageObject: scheduledMessage
+        };
+      } catch (err) {
+        logger.error('Error fetching author or schedule channel : %j', err);
+        return false;
+      }
+    });
+    return _.compact(sm);
+  } catch (err) {
+    logger.error('Error while trying to fetch scheduled messages %j', err);
+    return false;
+  }
+};
+
 bot.login(config.discord.token);
 
 bot.on('ready', async () => {
   logger.info('Starting scheduler bot...');
+  const scheduledMessages = await getScheduledMessages(); // (because we're changing db items)
+  /* eslint-disable no-param-reassign */ await Promise.map(
+    scheduledMessages,
+    scheduledMessage => {
+      schedule.scheduleJob(
+        scheduledMessage.id,
+        scheduledMessage.scheduledDate,
+        async () => {
+          scheduledMessage.scheduleChannel.send(scheduledMessage.message);
+          scheduledMessage.scheduledMessageObject.active = false;
+          await scheduledMessage.scheduledMessageObject.save();
+        }
+      );
+    }
+  );
+  /* eslint-enable no-param-reassign */
 });
 
 bot.on('message', async message => {
