@@ -17,8 +17,13 @@ module.exports = {
         parser: 'babylon'
       }
     ],
+    'yoda': [
+      'error',
+      'always'
+    ],
     'func-names': ['off'],
     'no-underscore-dangle': ['off'],
-    'class-methods-use-this': ['off']
+    'class-methods-use-this': ['off'],
+    'no-useless-return': ['off']
   }
 };
