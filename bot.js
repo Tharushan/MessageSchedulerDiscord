@@ -176,7 +176,7 @@ bot.on('message', async message => {
       }
     } else if ('help' === _.first(args)) {
       message.channel.send(
-        `\`!schedule\`: Message scheduling\n\`!schedule list\`: List all scheduled messages\n\`!schedule delete [scheduleId]\`: Delete a scheduled message (with the id returned with \`!schedule list\``
+        `\`${config.discord.prefix}schedule\`: Message scheduling\n\`${config.discord.prefix}schedule list\`: List all scheduled messages\n\`${config.discord.prefix}schedule delete [scheduleId]\`: Delete a scheduled message (with the id returned with \`${config.discord.prefix}schedule list\``
       );
     }
     return;
