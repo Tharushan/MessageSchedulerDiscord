@@ -21,5 +21,7 @@ Note: You can also schedule date using sentences like `In 30 minutes` when the b
 
 ### Major dependencies 
 [discord.js](https://github.com/discordjs/discord.js) discord.js is a powerful Node.js module that allows you to easily interact with the Discord API.
+
 [chrono-node](https://github.com/wanasit/chrono) A natural language date parser in Javascript, designed for extracting date information from any given text.
+
 [node-schedule](https://github.com/node-schedule/node-schedule) Node Schedule is a flexible cron-like and not-cron-like job scheduler for Node.js
