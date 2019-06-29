@@ -152,9 +152,17 @@ bot.on('message', async message => {
     } else if ('delete' === _.first(args)) {
       const deletedId = _.nth(args, 1);
       if (!deletedId) {
-        message.channel.send(
-          `Missing argument: id of message schedule to delete.\nUsage: ${config.prefix}${command} delete [scheduleId]`
-        );
+        await message.channel.send({
+          embed: {
+            color: _.random(1, 16777214),
+            fields: [
+              {
+                name: '**__Error__**',
+                value: `Missing argument: id of message schedule to delete.\nUsage: ${config.discord.prefix}${command} delete [scheduleId]`
+              }
+            ]
+          }
+        });
         return;
       }
       try {
@@ -170,14 +178,38 @@ bot.on('message', async message => {
         message.channel.send(`Scheduled message (id: ${deletedId}) deleted.`);
       } catch (err) {
         logger.error('Error deleting schedule message %s:  %j', deletedId, err);
-        message.channel.send(
-          `Error deleting schedule message (id: ${deletedId}), message not found.`
-        );
+        await message.channel.send({
+          embed: {
+            color: _.random(1, 16777214),
+            fields: [
+              {
+                name: '**__Error__**',
+                value: `Error deleting schedule message (id: ${deletedId}), message not found.`
+              }
+            ]
+          }
+        });
       }
     } else if ('help' === _.first(args)) {
-      message.channel.send(
-        `\`${config.discord.prefix}schedule\`: Message scheduling\n\`${config.discord.prefix}schedule list\`: List all scheduled messages\n\`${config.discord.prefix}schedule delete [scheduleId]\`: Delete a scheduled message (with the id returned with \`${config.discord.prefix}schedule list\``
-      );
+      await message.channel.send({
+        embed: {
+          color: _.random(1, 16777214),
+          fields: [
+            {
+              name: `${config.discord.prefix}schedule`,
+              value: `Message scheduling`
+            },
+            {
+              name: `${config.discord.prefix}schedule list`,
+              value: `List all scheduled messages`
+            },
+            {
+              name: `${config.discord.prefix}schedule delete [scheduleId]`,
+              value: `Delete a scheduled message (with the id returned with \`${config.discord.prefix}schedule list\`)`
+            }
+          ]
+        }
+      });
     }
     return;
   }
@@ -188,9 +220,18 @@ bot.on('message', async message => {
   }
 
   schedulers.push(message.author.id);
-  await message.channel.send(
-    'Which channel do you want the message to be scheduled in ?'
-  );
+
+  await message.channel.send({
+    embed: {
+      color: _.random(1, 16777214),
+      fields: [
+        {
+          name: '🛠',
+          value: 'Which channel do you want the message to be scheduled in ?'
+        }
+      ]
+    }
+  });
 
   try {
     const channelMessage = await getResponseMessage(message);
@@ -211,9 +252,26 @@ bot.on('message', async message => {
     if (!member.permissions.has('ADMINISTRATOR')) {
       throw new Error('You cannot schedule a message for this channel.');
     }
-    message.channel.send(
-      `Broadcast channel : \`${broadcastChannel.guild} - ${broadcastChannel.name}\`\nWhen do you want the message to be scheduled on ?`
-    );
+
+    await message.channel.send({
+      embed: {
+        color: _.random(1, 16777214),
+        fields: [
+          {
+            name: '**__🛠 Schedule message channel__**',
+            value: `\`${broadcastChannel.guild} - ${broadcastChannel.name}\``
+          },
+          {
+            name: '\u200B',
+            value: '\u200B'
+          },
+          {
+            name: '⏰',
+            value: 'When do you want the message to be scheduled on ?'
+          }
+        ]
+      }
+    });
 
     const scheduleDate = await getResponseMessage(message);
     const chronoDate = chrono.parseDate(scheduleDate.content);
@@ -235,12 +293,25 @@ bot.on('message', async message => {
         )})`
       );
     }
-
-    await message.channel.send(
-      `Message scheduled on \`${formatedDate.format(
-        'YYYY-MM-DD HH:mm'
-      )}\`\nWhat is the content of the message to be scheduled ?`
-    );
+    await message.channel.send({
+      embed: {
+        color: _.random(1, 16777214),
+        fields: [
+          {
+            name: '**__⏰ Schedule date__**',
+            value: formatedDate.format('YYYY-MM-DD HH:mm')
+          },
+          {
+            name: '\u200B',
+            value: '\u200B'
+          },
+          {
+            name: '📝',
+            value: 'What is the content of the message to be scheduled ?'
+          }
+        ]
+      }
+    });
     const scheduleMessage = await getResponseMessage(message);
     const scheduleM = await ScheduleMessageSchema.create({
       authorId: message.author.id,
@@ -267,17 +338,46 @@ bot.on('message', async message => {
         'YYYY-MM-DD HH:mm'
       )}`
     );
-
-    await message.channel.send(
-      `\`\`\`${scheduleMessage.content}\`\`\`\n will be sent in \`${
-        broadcastChannel.name
-      } (${broadcastChannel.guild})\` channel on \`${formatedDate.format(
-        'YYYY-MM-DD HH:mm'
-      )}\``
-    );
+    await message.channel.send({
+      embed: {
+        color: _.random(1, 16777214),
+        fields: [
+          {
+            name: '**__📝 Message Content__**',
+            value: scheduleMessage.content
+          },
+          {
+            name: '\u200B',
+            value: '\u200B'
+          },
+          {
+            name: '🛠 Schedule Channel',
+            value: broadcastChannel.name
+          },
+          {
+            name: '\u200B',
+            value: '\u200B'
+          },
+          {
+            name: '⏰ Schedule date',
+            value: formatedDate.format('YYYY-MM-DD HH:mm')
+          }
+        ]
+      }
+    });
   } catch (err) {
     logger.error(err);
-    message.channel.send(`Error: ${err.message}`);
+    await message.channel.send({
+      embed: {
+        color: _.random(1, 16777214),
+        fields: [
+          {
+            name: '**__Error__**',
+            value: `${err.message}`
+          }
+        ]
+      }
+    });
   }
   _.pull(schedulers, message.author.id);
   return;
